@@ -217,7 +217,14 @@ def expasy(sequence_list1,sequence_list2):
     while True:
         pass
 
+def write_sequence_file(sequence_list1,sequence_list2):
+    with open (file_name,'w') as filename:
+        filename.write(overlay(sequence_list1,sequence_list2))
 
+write_file=input('would you like to write a text file with your translated sequence? (y/n) ')
+file_name=input('type in name of file, click enter when done: ')
+if write_file == 'y':
+    write_sequence_file(sequence_list1,sequence_list2)
 generate_expasy_question=input('would you like to generate an expasy file? (y/n): ')
 if generate_expasy_question == 'y':
     expasy(sequence_list1,sequence_list2)
