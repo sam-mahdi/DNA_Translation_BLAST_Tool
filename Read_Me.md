@@ -9,6 +9,6 @@ for forward/reverse individually
 ```python DBT.py -f forward_sequence.txt```
 ```python DBT.py -r reverse.sequence.txt```
 
-Output will consist of any reading frames found, and you then will choose which sequence to use for BLAST. 
+Output will consist of any reading frames found, and you then will choose which sequence to use for BLAST. You can also choose alignment, which will compare your sequence with a predicted sequence, obtained from a file containing what your sequence should, and prints out any amino acids that don't align, and the % aligned. 
 
 Additionally, an option is presented if you wish to import sequence into expasy and calculate pI, molecular weight, and exctinction coefficient, as well as save your translated sequence as a txt file. 
