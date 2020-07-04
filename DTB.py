@@ -162,7 +162,7 @@ def overlay(sequence_list1,sequence_list2):
 sequence_list1=[]
 sequence_list2=[]
 global_codon_list=[]
-def main_loop():
+def create_sequence():
     global global_codon_list
     global sequence_list1
     global sequence_list2
@@ -197,14 +197,58 @@ def main_loop():
         pick_sequence_to_search=input('indicate which row # sequence to search: ')
         sequence_list1.append(sequence_to_search[int(pick_sequence_to_search)])
 
-main_loop()
-driver = webdriver.Chrome()
-driver.get('https://blast.ncbi.nlm.nih.gov/Blast.cgi?PROGRAM=blastp&PAGE_TYPE=BlastSearch&LINK_LOC=blasthome')
-fill_box = driver.find_element_by_xpath('/html/body/div[2]/div/div[2]/form/div[3]/fieldset/div[1]/div[1]/textarea')
-fill_box.clear()
-fill_box.send_keys(overlay(sequence_list1,sequence_list2))
-sumbit_button=driver.find_element_by_xpath('/html/body/div[2]/div/div[2]/form/div[6]/div/div[1]/div[1]/input')
-sumbit_button.click()
+def use_seq_comparison(sequence_list1,sequence_list2):
+    list_conversion=list((overlay(sequence_list1,sequence_list2)))
+    predicted_sequence_response=input('please type in the name of predicted sequence file: ')
+    predicted_sequence=[]
+    with open(predicted_sequence_response) as prediction_file:
+        for lines in prediction_file:
+            remove_white_spaces=lines.strip()
+            for amino_acids in remove_white_spaces:
+                predicted_sequence.append(amino_acids)
+
+    counter=0
+    seq_match=[]
+    matched_amino_acids=[]
+    unmatched_head_amino_acids=[]
+    flag=False
+    for amino_acids in list_conversion:
+        counter+=1
+        seq_match.append(amino_acids)
+        if counter >= 5:
+            if seq_match == predicted_sequence[0:5]:
+                flag=True
+            else:
+                if flag is True:
+                    matched_amino_acids.append(amino_acids)
+                else:
+                    seq_match.pop(0)
+                    unmatched_head_amino_acids.append(amino_acids)
+    combined_list=seq_match[0:5]+matched_amino_acids
+    count=len(unmatched_head_amino_acids)
+    unmatched=0
+    for stuff,stuffs in zip(predicted_sequence,combined_list):
+        count+=1
+        if stuff != stuffs:
+            print(f'amino acid {count}{stuffs} different or missing from predicted')
+            unmatched+=1
+
+    print(f'{(count-unmatched)/count*100} % match')
+
+
+def BLAST(sequence_list1,sequence_list2):
+    driver = webdriver.Chrome()
+    driver.get('https://blast.ncbi.nlm.nih.gov/Blast.cgi?PROGRAM=blastp&PAGE_TYPE=BlastSearch&LINK_LOC=blasthome')
+    fill_box = driver.find_element_by_xpath('/html/body/div[2]/div/div[2]/form/div[3]/fieldset/div[1]/div[1]/textarea')
+    fill_box.clear()
+    fill_box.send_keys(overlay(sequence_list1,sequence_list2))
+    sumbit_button=driver.find_element_by_xpath('/html/body/div[2]/div/div[2]/form/div[6]/div/div[1]/div[1]/input')
+    sumbit_button.click()
+    while True:
+        try:
+            tmp = driver.title
+        except:
+            break
 
 def expasy(sequence_list1,sequence_list2):
     driver = webdriver.Chrome()
@@ -215,16 +259,31 @@ def expasy(sequence_list1,sequence_list2):
     sumbit_button=driver.find_element_by_xpath('/html/body/div[2]/div[2]/form/p[1]/input[2]')
     sumbit_button.click()
     while True:
-        pass
+        try:
+            tmp = driver.title
+        except:
+            print('program done')
+            break
 
 def write_sequence_file(sequence_list1,sequence_list2):
     with open (file_name,'w') as filename:
         filename.write(overlay(sequence_list1,sequence_list2))
 
-write_file=input('would you like to write a text file with your translated sequence? (y/n) ')
-file_name=input('type in name of file, click enter when done: ')
-if write_file == 'y':
-    write_sequence_file(sequence_list1,sequence_list2)
-generate_expasy_question=input('would you like to generate an expasy file? (y/n): ')
-if generate_expasy_question == 'y':
-    expasy(sequence_list1,sequence_list2)
+def main_loop():
+    create_sequence()
+    choice=input('would you like to use BLAST, or sequence alignment to confirm sequence identity (type BLAST or alignment): ')
+    if choice == 'alignment':
+        use_seq_comparison(sequence_list1,sequence_list2)
+    else:
+        BLAST(sequence_list1,sequence_list2)
+    write_file=input('would you like to save your translated sequence? (y/n) ')
+    if write_file == 'y':
+        file_name=input('type in name of file, click enter when done: ')
+        write_sequence_file(sequence_list1,sequence_list2)
+    generate_expasy_question=input('would you like to generate an expasy file? (y/n): ')
+    if generate_expasy_question == 'y':
+        expasy(sequence_list1,sequence_list2)
+    else:
+        print('program done')
+
+main_loop()
