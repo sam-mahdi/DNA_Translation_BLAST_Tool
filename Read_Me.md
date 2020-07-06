@@ -1,6 +1,6 @@
 This is the DNA_Translation_Blast Tool Version 2. 
 
-This version works exclusively with genescript (if you have sequences from other sites, use version 1). 
+This version works exclusively with genescript (if you have sequences from other sites, use version 1) using Selenium
 
 This version will log into Genescript, use the project_id provided to search for your sample, and extract all of the sequenced data. Then it will translate all your sequences, and print them out. 
 
