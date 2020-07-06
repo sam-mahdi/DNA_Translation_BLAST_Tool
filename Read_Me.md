@@ -2,6 +2,8 @@ This is the DNA_Translation_Blast Tool Version 2.
 
 This version works exclusively with genescript (if you have sequences from other sites, use version 1) using Selenium
 
+Designed for Chrome, but you can add your own webdriver if you wish. 
+
 This version will log into Genescript, use the project_id provided to search for your sample, and extract all of the sequenced data. Then it will translate all your sequences, and print them out. 
 
 Auto-Mode uses a size-cut off of 50 amino acids, and is used exclusively to check sequence data. It will only printout protein sequences that are larger than that. It will print out all samples it finds, and end the program. 
