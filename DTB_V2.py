@@ -8,6 +8,38 @@ import time
 import re
 import sys
 
+def login(driver):
+    print('Logging in')
+    driver.get('https://clims4.genewiz.com/RegisterAccount/Login')
+    fill_box = driver.find_element_by_xpath('//*[@id="LoginName"]')
+    fill_box.clear()
+    fill_box.send_keys('bezsonova@uchc.edu')
+    fill_box = driver.find_element_by_xpath('//*[@id="Password"]')
+    fill_box.send_keys('IMibes1')
+    driver.find_element_by_xpath('//*[@id="btnSubmit"]').click()
+
+def sample_search(driver):
+    global sample_status
+    table = driver.find_element_by_xpath('//*[@id="myOrdersTable"]/tbody')
+    #driver.find_element_by_xpath('//*[@id="hs-eu-confirmation-button"]').click()
+    try:
+        for i,td in enumerate(table.find_elements_by_xpath('//*[@id="myOrdersTable"]/tbody/tr/td[4]'),1):
+            number_search=re.match('^\d+-',td.text)
+            if td.text == (number_search.group(0)+user_input):
+                number_of_samples=driver.find_element_by_xpath(f'//*[@id="myOrdersTable"]/tbody/tr[{i}]/td[9]')
+                sample_status=driver.find_element_by_xpath(f'//*[@id="myOrdersTable"]/tbody/tr[{i}]/td[11]/button')
+                driver.find_element_by_xpath(f'//*[@id="myOrdersTable"]/tbody/tr[{i}]/td[11]/button').click()
+                break
+        print(f'\n{number_of_samples.text} samples detected\n')
+        print(f'\nEstimated time of completion {int(number_of_samples.text)*2} seconds')
+        flag=True
+    except:
+        flag=False
+        WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH,'//*[@id="myOrdersTable_paginate"]/ul/li[8]/a'))).click()
+    return flag
+
+
+sample_status=()
 user_input=sys.argv[1]
 def get_sequence():
     start_time = time.time()
@@ -23,34 +55,24 @@ def get_sequence():
     options.add_argument('--proxy-server="direct://"')
     options.add_argument('--proxy-bypass-list=*')
     driver = webdriver.Chrome(options=options)
-    print('Logging in')
-    driver.get('https://clims4.genewiz.com/RegisterAccount/Login')
-    fill_box = driver.find_element_by_xpath('//*[@id="LoginName"]')
-    fill_box.clear()
-    fill_box.send_keys('*****')
-    fill_box = driver.find_element_by_xpath('//*[@id="Password"]')
-    fill_box.send_keys('****')
-    driver.find_element_by_xpath('//*[@id="btnSubmit"]').click()
-    table = driver.find_element_by_xpath('//*[@id="myOrdersTable"]/tbody')
-    driver.find_element_by_xpath('//*[@id="hs-eu-confirmation-button"]').click()
+    login(driver)
+    WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH,'//*[@id="hs-eu-confirmation-button"]'))).click()
     print('\nCompiling Sequences\n')
-    for i,td in enumerate(table.find_elements_by_xpath('//*[@id="myOrdersTable"]/tbody/tr/td[4]'),1):
-        number_search=re.match('^\d+-',td.text)
-        if td.text == (number_search.group(0)+user_input):
-            number_of_samples=driver.find_element_by_xpath(f'//*[@id="myOrdersTable"]/tbody/tr[{i}]/td[9]')
-            print(f'\n{number_of_samples.text} samples detected\n')
-            print(f'\nEstimated time of completion {int(number_of_samples.text)*2} seconds')
-            driver.find_element_by_xpath(f'//*[@id="myOrdersTable"]/tbody/tr[{i}]/td[11]/button').click()
-            break
-
+    page=0
+    while sample_search(driver) is False:
+        page+=1
+        print(f'Checking Page {page}')
+    if sample_status.text != 'View Results':
+        print('\nSample is not finished sequencing yet\n')
+        return
     WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="gwzSngrOrderResultPanelRoot"]/table/tbody')))
     seq_list=[]
     table=driver.find_element_by_xpath('//*[@id="gwzSngrOrderResultPanelRoot"]/table/tbody')
     for x,sequence in enumerate(table.find_elements_by_xpath('//*[@id="gwzSngrOrderResultPanelRoot"]/table/tbody/tr/td[9]'),1):
-        WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, f'//*[@id="gwzSngrOrderResultPanelRoot"]/table/tbody//tr[{x}]/td[9]/span[2]'))).click()
+        WebDriverWait(driver, 20).until(EC.element_to_be_clickable((By.XPATH, f'//*[@id="gwzSngrOrderResultPanelRoot"]/table/tbody//tr[{x}]/td[9]/span[2]'))).click()
         seq_list.append([(WebDriverWait(driver, 20).until(EC.visibility_of_element_located((By.XPATH, "//*[@id='gwzViewResultsModalDialog']/div/div/div[2]/div"))).text)])
-        WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, '//*[@id="gwzViewResultsModalDialog"]/div/div/div[3]/button'))).click()
-    print(time.time() - start_time)
+        WebDriverWait(driver, 20).until(EC.element_to_be_clickable((By.XPATH, '//*[@id="gwzViewResultsModalDialog"]/div/div/div[3]/button'))).click()
+    #print(time.time() - start_time)
     driver.close()
     return seq_list
 
@@ -269,7 +291,11 @@ def reverse_loop_auto(title):
 def auto_mode():
     global global_codon_list
     global sequence_list1
-    for i,sequence in enumerate(get_sequence()):
+    sample_statues_check=get_sequence()
+    if sample_statues_check == None:
+        print('\nEnding program\n')
+        return
+    for i,sequence in enumerate(sample_statues_check):
         title=re.search(r'^>.*\n',sequence[0])
         remove_title=re.sub(r'^>.*\n','',sequence[0])
         global_codon_list=re.sub(r'\n','',remove_title)
