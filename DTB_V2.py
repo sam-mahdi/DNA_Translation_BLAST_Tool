@@ -13,19 +13,24 @@ def login(driver):
     driver.get('https://clims4.genewiz.com/RegisterAccount/Login')
     fill_box = driver.find_element_by_xpath('//*[@id="LoginName"]')
     fill_box.clear()
-    fill_box.send_keys('bezsonova@uchc.edu')
+    fill_box.send_keys('******')
     fill_box = driver.find_element_by_xpath('//*[@id="Password"]')
-    fill_box.send_keys('IMibes1')
+    fill_box.send_keys('*****')
     driver.find_element_by_xpath('//*[@id="btnSubmit"]').click()
 
 def sample_search(driver):
     global sample_status
     table = driver.find_element_by_xpath('//*[@id="myOrdersTable"]/tbody')
-    #driver.find_element_by_xpath('//*[@id="hs-eu-confirmation-button"]').click()
     try:
         for i,td in enumerate(table.find_elements_by_xpath('//*[@id="myOrdersTable"]/tbody/tr/td[4]'),1):
+            if td.text == '':
+                continue
             number_search=re.match('^\d+-',td.text)
-            if td.text == (number_search.group(0)+user_input):
+            if number_search == None:
+                number_value=''
+            else:
+                number_value=number_search.group(0)
+            if td.text == (number_value+user_input):
                 number_of_samples=driver.find_element_by_xpath(f'//*[@id="myOrdersTable"]/tbody/tr[{i}]/td[9]')
                 sample_status=driver.find_element_by_xpath(f'//*[@id="myOrdersTable"]/tbody/tr[{i}]/td[11]/button')
                 driver.find_element_by_xpath(f'//*[@id="myOrdersTable"]/tbody/tr[{i}]/td[11]/button').click()
@@ -42,6 +47,7 @@ def sample_search(driver):
 sample_status=()
 user_input=sys.argv[1]
 def get_sequence():
+    global sample_status
     start_time = time.time()
     print('Starting Program')
     options = Options()
@@ -62,6 +68,11 @@ def get_sequence():
     while sample_search(driver) is False:
         page+=1
         print(f'Checking Page {page}')
+        if page>50:
+            print(f'Sequence ID does not exist')
+            print('Ending Program')
+            sample_status='Error'
+            return
     if sample_status.text != 'View Results':
         print('\nSample is not finished sequencing yet\n')
         return
@@ -167,7 +178,13 @@ sequence_list1=[]
 def manual_mode():
     global global_codon_list
     global sequence_list1
-    for i,sequence in enumerate(get_sequence()):
+    sample_statues_check=get_sequence()
+    if sample_status == 'Error':
+        return
+    if sample_statues_check == None:
+        print('\nEnding program\n')
+        return
+    for i,sequence in enumerate(sample_statues_check):
         title=re.search(r'^>.*\n',sequence[0])
         remove_title=re.sub(r'^>.*\n','',sequence[0])
         global_codon_list=re.sub(r'\n','',remove_title)
@@ -292,6 +309,8 @@ def auto_mode():
     global global_codon_list
     global sequence_list1
     sample_statues_check=get_sequence()
+    if sample_status == 'Error':
+        return
     if sample_statues_check == None:
         print('\nEnding program\n')
         return
