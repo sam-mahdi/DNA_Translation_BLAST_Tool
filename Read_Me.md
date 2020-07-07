@@ -1,6 +1,6 @@
 This is the DNA_Translation_Blast Tool Version 2. 
 
-This version works exclusively with genescript (if you have sequences from other sites, use version 1) using Selenium
+This version works exclusively with genewhiz (if you have sequences from other sites, use version 1) using Selenium
 
 Designed for Chrome, but you can add your own webdriver if you wish. 
 
